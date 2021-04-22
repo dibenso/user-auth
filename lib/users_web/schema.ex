@@ -9,10 +9,14 @@ defmodule UsersWeb.Schema do
     field :email, non_null(:string), description: "User's email address"
     field :inserted_at, non_null(:string), description: "Created at"
     field :updated_at, non_null(:string), description: "Last updated at"
+  end
+
+  object :authenticated_user, description: "A User with authentication token" do
+    field :user, non_null(:user), description: "Authenticated user"
     field :token, :string, description: "Authentication token"
   end
 
-  payload_object(:user_payload, :user)
+  payload_object(:user_payload, :authenticated_user)
 
   query do
     @desc "Root query"
@@ -28,18 +32,9 @@ defmodule UsersWeb.Schema do
       arg :email, non_null(:string)
       arg :password, non_null(:string)
   
-      resolve(fn (_, args, _) -> create_user(args) end)
+      resolve(&UsersWeb.UserResolver.create_user/3)
 
       middleware &build_payload/2
-    end
-  end
-
-  defp create_user(args) do
-    case Users.Account.create_user(args) do
-      {:ok, user} ->
-        {:ok, token, _} = Users.Guardian.encode_and_sign(user)
-        {:ok, Map.put(user, :token, token)}
-      result      -> result
     end
   end
 end
