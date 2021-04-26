@@ -19,7 +19,7 @@ defmodule Users.Guardian do
     # found in the `"sub"` key. In `above subject_for_token/2` we returned
     # the resource id so here we'll rely on that to look it up.
     id = claims["sub"]
-    Users.Account.get_user!(id)
+    {:ok, Users.Account.get_user!(id)}
   end
   def resource_from_claims(_claims) do
     {:error, :reason_for_error}

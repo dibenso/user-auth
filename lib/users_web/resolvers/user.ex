@@ -1,5 +1,5 @@
-defmodule UsersWeb.UserResolver do
-  def create_user(_parent, args, _context) do
+defmodule UsersWeb.Resolvers.User do
+  def create_user(args, _context) do
     case Users.Account.create_user(args) do
       {:ok, user} ->
         IO.puts "======> confirmation token: #{user.confirmation_token}"
@@ -7,5 +7,13 @@ defmodule UsersWeb.UserResolver do
         {:ok, %{user: Map.put(user, :token, token), token: token}}
       result      -> result
     end
+  end
+
+  def get_user(_args, %{context: %{current_user: current_user}}) do
+    {:ok, current_user}
+  end
+
+  def get_user(_, _) do
+    {:error, "Not Authorized"}
   end
 end

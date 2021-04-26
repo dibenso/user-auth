@@ -6,6 +6,7 @@ defmodule UsersWeb.Router do
       parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
       pass: ["*/*"],
       json_decoder: Phoenix.json_library()
+    plug UsersWeb.Context
 
     plug :accepts, ["json"]
   end
@@ -14,7 +15,7 @@ defmodule UsersWeb.Router do
     pipe_through :graphql
 
     forward "/graphiql", Absinthe.Plug.GraphiQL,
-      interface: :simple,
+      interface: :playground,
       schema: UsersWeb.Schema,
       json_codec: Jason
 
