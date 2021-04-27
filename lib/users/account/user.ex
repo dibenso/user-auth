@@ -8,6 +8,7 @@ defmodule Users.Account.User do
     field :email, :string
     field :password, :string
     field :username, :string
+    field :role, :string, default: "user"
 
     timestamps()
   end

@@ -27,8 +27,10 @@ defmodule UsersWeb.Schema do
     end
 
     @desc "Get a User"
-    field :get_user, type: :user_payload, description: "Get a User" do
-      resolve(&UsersWeb.Resolvers.User.get_user/2)
+    field :get_private_user, type: :user_payload, description: "Get a User" do
+      arg :id, :id, description: "User id to allow admin access to private user information"
+
+      resolve(&UsersWeb.Resolvers.User.get_private_user/2)
 
       middleware &build_payload/2
     end
@@ -37,9 +39,10 @@ defmodule UsersWeb.Schema do
   mutation do
     @desc "Create a User"
     field :create_user, type: :user_with_token_payload, description: "Create a User" do
-      arg :username, non_null(:string)
-      arg :email, non_null(:string)
-      arg :password, non_null(:string)
+      arg :username, non_null(:string), description: "Username"
+      arg :email, non_null(:string), description: "Email"
+      arg :password, non_null(:string), description: "Password"
+      arg :admin, :boolean, description: "If User will be an admin"
   
       resolve(&UsersWeb.Resolvers.User.create_user/2)
 

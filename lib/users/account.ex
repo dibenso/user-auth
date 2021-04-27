@@ -4,6 +4,7 @@ defmodule Users.Account do
   """
 
   import Ecto.Query, warn: false
+  import Ecto.Changeset
   alias Users.Repo
 
   alias Users.Account.User
@@ -52,6 +53,25 @@ defmodule Users.Account do
   def create_user(attrs \\ %{}) do
     %User{}
     |> User.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Creates a user with an admin role.
+
+  ## Examples
+
+      iex> create_admin(%{field: value})
+      {:ok, %User{}}
+
+      iex> create_admin(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_admin(attrs \\ %{}) do
+    %User{}
+    |> User.changeset(attrs)
+    |> change(%{role: "admin", confirmed: true})
     |> Repo.insert()
   end
 
