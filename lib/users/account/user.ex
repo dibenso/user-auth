@@ -24,6 +24,7 @@ defmodule Users.Account.User do
     |> validate_format(:email, ~r/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
     |> validate_length(:password, min: 8, max: 256)
     |> validate_format(:password, ~r/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
+    |> validate_format(:role, ~r/^(user|admin|super)$/)
     |> change(%{password: Pbkdf2.hash_pwd_salt(attrs[:password]), confirmation_token: Util.random_string(64), confirmed: false})
     |> unique_constraint(:email)
     |> unique_constraint(:confirmation_token)

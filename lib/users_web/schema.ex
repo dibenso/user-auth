@@ -3,7 +3,7 @@ defmodule UsersWeb.Schema do
   import AbsintheErrorPayload.Payload
   import_types AbsintheErrorPayload.ValidationMessageTypes
 
-  object :user, description: "A User" do
+  object :private_user, description: "A User" do
     field :id, non_null(:id), description: "Unique identifier"
     field :username, non_null(:string), description: "User's username"
     field :email, non_null(:string), description: "User's email address"
@@ -13,12 +13,12 @@ defmodule UsersWeb.Schema do
   end
 
   object :authenticated_user, description: "A User with authentication token" do
-    field :user, non_null(:user), description: "Authenticated User"
+    field :user, non_null(:private_user), description: "Authenticated User"
     field :token, :string, description: "Authentication token"
   end
 
-  payload_object(:user_payload, :user)
-  payload_object(:user_with_token_payload, :authenticated_user)
+  payload_object(:private_user_payload, :private_user)
+  payload_object(:authenticated_user_payload, :authenticated_user)
 
   query do
     @desc "Root query"
@@ -26,11 +26,21 @@ defmodule UsersWeb.Schema do
       resolve fn (_, _, _) -> {:ok, "Hello"} end
     end
 
-    @desc "Get a User"
-    field :get_private_user, type: :user_payload, description: "Get a User" do
+    @desc "Get current User or User by id if admin"
+    field :get_private_user, type: :private_user_payload do
       arg :id, :id, description: "User id to allow admin access to private user information"
 
       resolve(&UsersWeb.Resolvers.User.get_private_user/2)
+
+      middleware &build_payload/2
+    end
+
+    @desc "Sign in a User"
+    field :sign_in, type: :authenticated_user_payload do
+      arg :email, non_null(:string), description: "Email address of User"
+      arg :password, non_null(:string), description: "Password of User"
+
+      resolve(&UsersWeb.Resolvers.User.sign_in/2)
 
       middleware &build_payload/2
     end
@@ -38,7 +48,7 @@ defmodule UsersWeb.Schema do
 
   mutation do
     @desc "Create a User"
-    field :create_user, type: :user_with_token_payload, description: "Create a User" do
+    field :create_user, type: :authenticated_user_payload do
       arg :username, non_null(:string), description: "Username"
       arg :email, non_null(:string), description: "Email"
       arg :password, non_null(:string), description: "Password"

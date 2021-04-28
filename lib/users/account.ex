@@ -39,6 +39,38 @@ defmodule Users.Account do
   def get_user!(id), do: Repo.get!(User, id)
 
   @doc """
+  Gets a single user.
+
+  Returns a User if found by id or nil if not found
+
+  ## Examples
+
+      iex> get_user(123)
+      User{}
+
+      iex> get_user(456)
+      nil
+
+  """
+  def get_user(id), do: Repo.get(User, id)
+
+  @doc """
+  Gets a single user by email.
+
+  Returns a User if found by email or nil if not found
+
+  ## Examples
+
+      iex> get_user("email@example.com")
+      User{}
+
+      iex> get_user("does_not_exist@invalid.com")
+      nil
+
+  """
+  def get_user_by_email(email), do: Repo.get_by(User, email: email)
+
+  @doc """
   Creates a user.
 
   ## Examples
