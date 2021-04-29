@@ -13,10 +13,12 @@ defmodule UsersWeb.Resolvers.User do
       result      -> result
     end
   end
-  # Handle not authorized if current_user wants to create an admin but is not super
-  def create_user(%{admin: true}, _), do: not_authorized()
   # Allow admins to create Users
-  def create_user(args, %{context: %{current_user: _}} = context), do: admin_only(context, fn -> create_user(args, nil) end)
+  def create_user(args, %{context: %{current_user: _}} = context) do
+    admin_only(context) do
+      create_user(args, nil)
+    end
+  end
   # Create a User account
   def create_user(args, _context) do
     case Users.Account.create_user(args) do
