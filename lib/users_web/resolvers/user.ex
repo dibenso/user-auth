@@ -1,9 +1,7 @@
 defmodule UsersWeb.Resolvers.User do
-  # Check if current_user is an admin and call admin_handler
-  def admin_only(%{context: %{current_user: %{role: "super"}}}, admin_handler), do: admin_handler.()
-  def admin_only(%{context: %{current_user: %{role: "admin"}}}, admin_handler), do: admin_handler.()
-  # Handle unauthorized admin request
-  def admin_only(_, _), do: not_authorized()
+  defmacro admin_only(%{context: %{current_user: %{role: "super"}}}, do: block), do: quote do: unquote(block)
+  defmacro admin_only(%{context: %{current_user: %{role: "admin"}}}, do: block), do: quote do: unquote(block)
+  defmacro admin_only(_, _), do: quote do: not_authorized()
 
   # Allow super admin to create other admin Users
   def create_user(%{admin: true} = args, %{context: %{current_user: %{role: "super"}}}) do
@@ -32,13 +30,12 @@ defmodule UsersWeb.Resolvers.User do
 
   # Get a private User by id if current_user is admin
   def get_private_user(%{id: id}, context) do
-    admin_only(context, fn ->
-        case Users.Account.get_user(id) do
-          nil  -> not_found()
-          user -> {:ok, user}
-        end
+    admin_only(context) do
+      case Users.Account.get_user(id) do
+        nil  -> not_found()
+        user -> {:ok, user}
       end
-    )
+    end
   end
   # Get private User of current_user
   def get_private_user(_, %{context: %{current_user: current_user}}), do: current_user
@@ -61,14 +58,13 @@ defmodule UsersWeb.Resolvers.User do
 
   # Update a User with id if current user is an admin
   def update_user(%{id: id} = args, context) do
-    admin_only(context, fn ->
-        case get_private_user(%{id: id}, context) do
-          {:ok, user} ->
-            Users.Account.update_user(user, Map.delete(args, :id))
-          result      -> result
-        end
+    admin_only(context) do
+      case get_private_user(%{id: id}, context) do
+        {:ok, user} ->
+          Users.Account.update_user(user, Map.delete(args, :id))
+        result      -> result
       end
-    )
+    end
   end
   # Update the User of the current_user
   def update_user(args, %{context: %{current_user: current_user}}), do: Users.Account.update_user(current_user, args)

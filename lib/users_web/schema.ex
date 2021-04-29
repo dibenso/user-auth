@@ -10,6 +10,7 @@ defmodule UsersWeb.Schema do
     field :inserted_at, non_null(:string), description: "Time User was created"
     field :updated_at, non_null(:string), description: "Last time User was updated"
     field :confirmed, non_null(:boolean), description: "Indicates if User confirmed registration"
+    field :role, non_null(:string), description: "Role of User"
   end
 
   object :authenticated_user, description: "A User with authentication token" do
