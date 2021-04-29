@@ -1,4 +1,8 @@
 defmodule UsersWeb.Resolvers.User do
+  alias Users.Guardian
+  alias Users.Account
+  alias Users.Account.User
+
   defmacro admin_only(context, do: block) do
     quote do
       case unquote(context) do
@@ -11,11 +15,8 @@ defmodule UsersWeb.Resolvers.User do
 
   # Allow super admin to create other admin Users
   def create_user(%{admin: true} = args, %{context: %{current_user: %{role: "super"}}}) do
-    case Users.Account.create_admin(args) do
-      {:ok, user} ->
-        IO.puts "======> confirmation token: #{user.confirmation_token}"
-        {:ok, token, _} = Users.Guardian.encode_and_sign(user)
-        {:ok, %{user: user, token: token}}
+    case Account.create_admin(args) do
+      {:ok, user} -> new_user_with_token(user)
       result      -> result
     end
   end
@@ -27,21 +28,16 @@ defmodule UsersWeb.Resolvers.User do
   end
   # Create a User account
   def create_user(args, _context) do
-    case Users.Account.create_user(args) do
-      {:ok, user} ->
-        IO.puts "======> confirmation token: #{user.confirmation_token}"
-        {:ok, token, _} = Users.Guardian.encode_and_sign(user)
-        {:ok, %{user: user, token: token}}
+    case Account.create_user(args) do
+      {:ok, user} -> new_user_with_token(user)
       result      -> result
     end
   end
 
   # Get a private User by id if current_user is admin
   def get_private_user(%{id: id}, context) do
-    IO.puts "===========> HERE"
     admin_only(context) do
-      IO.puts "===========> HERE"
-      case Users.Account.get_user(id) do
+      case Account.get_user(id) do
         nil  -> not_found()
         user -> {:ok, user}
       end
@@ -54,14 +50,12 @@ defmodule UsersWeb.Resolvers.User do
 
   # Sign in a User
   def sign_in(%{email: email, password: password}, _) do
-    case Users.Account.get_user_by_email(email) do
+    case Account.get_user_by_email(email) do
       nil  -> incorrect_email_or_password()
       user ->
         case Pbkdf2.check_pass(user, password) do
           nil  -> incorrect_email_or_password()
-          _    ->
-            {:ok, token, _} = Users.Guardian.encode_and_sign(user)
-            {:ok, %{user: user, token: token}}
+          _    -> user_with_token(user)
         end
     end
   end
@@ -71,17 +65,34 @@ defmodule UsersWeb.Resolvers.User do
     admin_only(context) do
       case get_private_user(%{id: id}, context) do
         {:ok, user} ->
-          Users.Account.update_user(user, Map.delete(args, :id))
+          Account.update_user(user, Map.delete(args, :id))
         result      -> result
       end
     end
   end
   # Update the User of the current_user
-  def update_user(args, %{context: %{current_user: current_user}}), do: Users.Account.update_user(current_user, args)
+  def update_user(args, %{context: %{current_user: current_user}}), do: Account.update_user(current_user, args)
   # Handle unauthorized User update
   def update_user(_, _), do: not_authorized()
+
+  # Delete a User with id if current user is an admin
+  def delete_user(%{id: id}, context) do
+    admin_only(context) do
+      Account.delete_user(%User{id: id})
+    end
+  end
+  def delete_user(_, %{context: %{current_user: current_user}}), do: Account.delete_user(current_user)
 
   def not_authorized, do: {:error, "Not Authorized"}
   def not_found, do: {:error, "Not found"}
   defp incorrect_email_or_password, do: {:error, "Incorrect email address or password"}
+
+  defp user_with_token(user) do
+    {:ok, token, _} = Guardian.encode_and_sign(user)
+    {:ok, %{user: user, token: token}}
+  end
+  defp new_user_with_token(user) do
+    IO.puts "======> confirmation token: #{user.confirmation_token}"
+    user_with_token(user)
+  end
 end
