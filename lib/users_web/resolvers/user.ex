@@ -1,7 +1,13 @@
 defmodule UsersWeb.Resolvers.User do
-  defmacro admin_only(%{context: %{current_user: %{role: "super"}}}, do: block), do: quote do: unquote(block)
-  defmacro admin_only(%{context: %{current_user: %{role: "admin"}}}, do: block), do: quote do: unquote(block)
-  defmacro admin_only(_, _), do: quote do: not_authorized()
+  defmacro admin_only(context, do: block) do
+    quote do
+      case unquote(context) do
+        %{context: %{current_user: %{role: "super"}}} -> unquote(block)
+        %{context: %{current_user: %{role: "admin"}}} -> unquote(block)
+        _                                             -> not_authorized()
+      end
+    end
+  end
 
   # Allow super admin to create other admin Users
   def create_user(%{admin: true} = args, %{context: %{current_user: %{role: "super"}}}) do
@@ -32,7 +38,9 @@ defmodule UsersWeb.Resolvers.User do
 
   # Get a private User by id if current_user is admin
   def get_private_user(%{id: id}, context) do
+    IO.puts "===========> HERE"
     admin_only(context) do
+      IO.puts "===========> HERE"
       case Users.Account.get_user(id) do
         nil  -> not_found()
         user -> {:ok, user}
