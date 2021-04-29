@@ -58,5 +58,16 @@ defmodule UsersWeb.Schema do
 
       middleware &build_payload/2
     end
+
+    @desc "Update the User of current User or by id if admin"
+    field :update_user, type: :private_user_payload do
+      arg :id, :id, description: "Find user by id if admin"
+      arg :username, :string, description: "Updated username"
+      arg :confirmed, :boolean, description: "Updated confirmation status"
+
+      resolve(&UsersWeb.Resolvers.User.update_user/2)
+
+      middleware &build_payload/2
+    end
   end
 end

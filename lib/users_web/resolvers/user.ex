@@ -59,6 +59,22 @@ defmodule UsersWeb.Resolvers.User do
     end
   end
 
+  # Update a User with id if current user is an admin
+  def update_user(%{id: id} = args, context) do
+    admin_only(context, fn ->
+        case get_private_user(%{id: id}, context) do
+          {:ok, user} ->
+            Users.Account.update_user(user, Map.delete(args, :id))
+          result      -> result
+        end
+      end
+    )
+  end
+  # Update the User of the current_user
+  def update_user(args, %{context: %{current_user: current_user}}), do: Users.Account.update_user(current_user, args)
+  # Handle unauthorized User update
+  def update_user(_, _), do: not_authorized()
+
   def not_authorized, do: {:error, "Not Authorized"}
   def not_found, do: {:error, "Not found"}
   defp incorrect_email_or_password, do: {:error, "Incorrect email address or password"}
