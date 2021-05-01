@@ -29,4 +29,11 @@ defmodule Users.Account.User do
     |> unique_constraint(:email)
     |> unique_constraint(:confirmation_token)
   end
+
+  def update_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username, :confirmed, :confirmation_token])
+    |> validate_length(:username, min: 2, max: 32)
+    |> validate_format(:username, ~r/^[a-zA-Z0-9_.-]*$/)
+  end
 end

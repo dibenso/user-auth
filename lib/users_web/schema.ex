@@ -79,5 +79,15 @@ defmodule UsersWeb.Schema do
 
       middleware &build_payload/2
     end
+
+    @desc "Confirms User with token or by id if admin"
+    field :confirm_user, type: :private_user_payload do
+      arg :id, :integer, description: "Confirm User by id if admin"
+      arg :confirmation_token, :string, description: "Sign up confirmation token"
+
+      resolve(&UsersWeb.Resolvers.User.confirm_user/2)
+
+      middleware &build_payload/2
+    end
   end
 end

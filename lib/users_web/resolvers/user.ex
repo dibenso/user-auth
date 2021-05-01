@@ -100,6 +100,32 @@ defmodule UsersWeb.Resolvers.User do
     end
   end
   def delete_user(_, %{context: %{current_user: current_user}}), do: Account.delete_user(current_user)
+  # Handle unauthorized User deletion
+  def delete_user(_, _), do: not_authorized()
+
+  # Confirm User sign up by id if current user if admin
+  def confirm_user(%{id: id}, context) do
+    admin_only(context, id) do
+      case Account.get_user(id) do
+        nil  -> not_found()
+        user -> Account.confirm_user(user)
+      end
+    end
+  end
+  # Confirm User sign up by confirmation token
+  def confirm_user(%{confirmation_token: confirmation_token}, _) do
+    if confirmation_token === "" do
+      not_authorized()
+    else
+      case Account.get_user_by_confirmation_token(confirmation_token) do
+        nil  -> not_authorized()
+        user ->
+          Account.confirm_user(user)
+      end
+    end
+  end
+  # Handle unauthorized User confirmation
+  def confirm_user(_, _), do: not_authorized()
 
   def not_authorized, do: {:error, "Not Authorized"}
   def not_found, do: {:error, "Not found"}

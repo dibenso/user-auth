@@ -61,14 +61,30 @@ defmodule Users.Account do
 
   ## Examples
 
-      iex> get_user("email@example.com")
+      iex> get_user_by_email("email@example.com")
       User{}
 
-      iex> get_user("does_not_exist@invalid.com")
+      iex> get_user_by_email("does_not_exist@invalid.com")
       nil
 
   """
   def get_user_by_email(email), do: Repo.get_by(User, email: email)
+
+  @doc """
+  Gets a single user by confirmation_token.
+
+  Returns a User if found by confirmation_token or nil if not found
+
+  ## Examples
+
+      iex> get_user_by_confirmation_token("2e4ff1c2a ...")
+      User{}
+
+      iex> get_user_by_confirmation_token("9a2f4a4aa ...")
+      nil
+
+  """
+  def get_user_by_confirmation_token(confirmation_token), do: Repo.get_by(User, confirmation_token: confirmation_token)
 
   @doc """
   Creates a user.
@@ -121,7 +137,25 @@ defmodule Users.Account do
   """
   def update_user(%User{} = user, attrs) do
     user
-    |> User.changeset(attrs)
+    |> User.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Confirms a user.
+
+  ## Examples
+
+      iex> confirm_user(user)
+      {:ok, %User{}}
+
+      iex> confirm_user(user)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def confirm_user(%User{} = user) do
+    user
+    |> User.update_changeset(%{confirmed: true, confirmation_token: ""})
     |> Repo.update()
   end
 
