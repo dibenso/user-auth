@@ -127,6 +127,12 @@ defmodule UsersWeb.Resolvers.User do
   # Handle unauthorized User confirmation
   def confirm_user(_, _), do: not_authorized()
 
+  # Get all private Users if current User if super
+  def get_all_private_users(_, %{context: %{current_user: %{role: "super"}}}), do: Account.list_users()
+  # Get all Users with "user" role if current User is admin
+  def get_all_private_users(_, %{context: %{current_user: %{role: "admin"}}}), do: Account.list_non_admin_users()
+  def get_all_private_users(_, _), do: not_authorized()
+
   def not_authorized, do: {:error, "Not Authorized"}
   def not_found, do: {:error, "Not found"}
   defp incorrect_email_or_password, do: {:error, "Incorrect email address or password"}

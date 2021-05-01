@@ -23,6 +23,20 @@ defmodule Users.Account do
   end
 
   @doc """
+  Returns the list of users with a "user" role.
+
+  ## Examples
+
+      iex> list_non_admin_users()
+      [%User{}, ...]
+
+  """
+  def list_non_admin_users do
+    query = from u in Users, where: u.role == "user"
+    Repo.all(query)
+  end
+
+  @doc """
   Gets a single user.
 
   Raises `Ecto.NoResultsError` if the User does not exist.

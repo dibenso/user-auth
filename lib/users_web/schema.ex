@@ -36,6 +36,13 @@ defmodule UsersWeb.Schema do
       middleware &build_payload/2
     end
 
+    @desc "Get all private Users if admin"
+    field :get_all_private_users, type: :private_user_payload do
+      resolve(&UsersWeb.Resolvers.User.get_all_private_users/2)
+
+      middleware &build_payload/2
+    end
+
     @desc "Sign in a User"
     field :sign_in, type: :authenticated_user_payload do
       arg :email, non_null(:string), description: "Email address of User"
