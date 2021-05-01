@@ -12,6 +12,24 @@ defmodule UsersWeb.Resolvers.User do
       end
     end
   end
+  defmacro admin_only(context, user_id, do: block) do
+    quote do
+      case unquote(context) do
+        %{context: %{current_user: %{role: "super"}}} -> unquote(block)
+        %{context: %{current_user: %{role: "admin"}}} ->
+          case Account.get_user(unquote(user_id)) do
+            nil  -> not_found()
+            user ->
+              if user.role === "user" do
+                unquote(block)
+              else
+                not_authorized()
+              end
+          end
+          _                                           -> not_authorized()
+      end
+    end
+  end
 
   # Allow super admin to create other admin Users
   def create_user(%{admin: true} = args, %{context: %{current_user: %{role: "super"}}}) do
@@ -36,7 +54,7 @@ defmodule UsersWeb.Resolvers.User do
 
   # Get a private User by id if current_user is admin
   def get_private_user(%{id: id}, context) do
-    admin_only(context) do
+    admin_only(context, id) do
       case Account.get_user(id) do
         nil  -> not_found()
         user -> {:ok, user}
@@ -44,7 +62,7 @@ defmodule UsersWeb.Resolvers.User do
     end
   end
   # Get private User of current_user
-  def get_private_user(_, %{context: %{current_user: current_user}}), do: current_user
+  def get_private_user(_, %{context: %{current_user: current_user}}), do: {:ok, current_user}
   # Handle unauthorized retrieval of private User
   def get_private_user(_, _), do: not_authorized()
 
@@ -53,16 +71,16 @@ defmodule UsersWeb.Resolvers.User do
     case Account.get_user_by_email(email) do
       nil  -> incorrect_email_or_password()
       user ->
-        case Pbkdf2.check_pass(user, password) do
-          nil  -> incorrect_email_or_password()
-          _    -> user_with_token(user)
+        case Pbkdf2.check_pass(user, password, [hash_key: :password]) do
+          {:error, "invalid password"}  -> incorrect_email_or_password()
+          _                             -> user_with_token(user)
         end
     end
   end
 
   # Update a User with id if current user is an admin
   def update_user(%{id: id} = args, context) do
-    admin_only(context) do
+    admin_only(context, id) do
       case get_private_user(%{id: id}, context) do
         {:ok, user} ->
           Account.update_user(user, Map.delete(args, :id))
@@ -77,7 +95,7 @@ defmodule UsersWeb.Resolvers.User do
 
   # Delete a User with id if current user is an admin
   def delete_user(%{id: id}, context) do
-    admin_only(context) do
+    admin_only(context, id) do
       Account.delete_user(%User{id: id})
     end
   end
