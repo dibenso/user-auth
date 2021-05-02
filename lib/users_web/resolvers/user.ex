@@ -3,11 +3,23 @@ defmodule UsersWeb.Resolvers.User do
   alias Users.Account
   alias Users.Account.User
 
+  defmacro admin_role_context do
+    quote do
+      %{context: %{current_user: %{role: "admin"}}}
+    end
+  end
+
+  defmacro super_role_context do
+    quote do
+      %{context: %{current_user: %{role: "super"}}}
+    end
+  end
+
   defmacro admin_only(context, do: block) do
     quote do
       case unquote(context) do
-        %{context: %{current_user: %{role: "super"}}} -> unquote(block)
-        %{context: %{current_user: %{role: "admin"}}} -> unquote(block)
+        super_role_context() -> unquote(block)
+        admin_role_context() -> unquote(block)
         _                                             -> not_authorized()
       end
     end
@@ -15,8 +27,8 @@ defmodule UsersWeb.Resolvers.User do
   defmacro admin_only(context, user_id, do: block) do
     quote do
       case unquote(context) do
-        %{context: %{current_user: %{role: "super"}}} -> unquote(block)
-        %{context: %{current_user: %{role: "admin"}}} ->
+        super_role_context() -> unquote(block)
+        admin_role_context() ->
           case Account.get_user(unquote(user_id)) do
             nil  -> not_found()
             user ->
@@ -32,7 +44,7 @@ defmodule UsersWeb.Resolvers.User do
   end
 
   # Allow super admin to create other admin Users
-  def create_user(%{admin: true} = args, %{context: %{current_user: %{role: "super"}}}) do
+  def create_user(%{admin: true} = args, super_role_context()) do
     case Account.create_admin(args) do
       {:ok, user} -> new_user_with_token(user)
       result      -> result
@@ -128,9 +140,9 @@ defmodule UsersWeb.Resolvers.User do
   def confirm_user(_, _), do: not_authorized()
 
   # Get all private Users if current User if super
-  def get_all_private_users(_, %{context: %{current_user: %{role: "super"}}}), do: {:ok, Account.list_users()}
+  def get_all_private_users(_, super_role_context()), do: {:ok, Account.list_users()}
   # Get all Users with "user" role if current User is admin
-  def get_all_private_users(_, %{context: %{current_user: %{role: "admin"}}}), do: {:ok, Account.list_non_admin_users()}
+  def get_all_private_users(_, admin_role_context()), do: {:ok, Account.list_non_admin_users()}
   # Handle unauthorized access of private Users
   def get_all_private_users(_, _), do: not_authorized()
 
