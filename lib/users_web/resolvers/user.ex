@@ -128,9 +128,10 @@ defmodule UsersWeb.Resolvers.User do
   def confirm_user(_, _), do: not_authorized()
 
   # Get all private Users if current User if super
-  def get_all_private_users(_, %{context: %{current_user: %{role: "super"}}}), do: Account.list_users()
+  def get_all_private_users(_, %{context: %{current_user: %{role: "super"}}}), do: {:ok, Account.list_users()}
   # Get all Users with "user" role if current User is admin
-  def get_all_private_users(_, %{context: %{current_user: %{role: "admin"}}}), do: Account.list_non_admin_users()
+  def get_all_private_users(_, %{context: %{current_user: %{role: "admin"}}}), do: {:ok, Account.list_non_admin_users()}
+  # Handle unauthorized access of private Users
   def get_all_private_users(_, _), do: not_authorized()
 
   def not_authorized, do: {:error, "Not Authorized"}

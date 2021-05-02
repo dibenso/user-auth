@@ -19,6 +19,7 @@ defmodule UsersWeb.Schema do
   end
 
   payload_object(:private_user_payload, :private_user)
+  payload_object(:all_private_users_payload, list_of(:private_user))
   payload_object(:authenticated_user_payload, :authenticated_user)
 
   query do
@@ -37,7 +38,7 @@ defmodule UsersWeb.Schema do
     end
 
     @desc "Get all private Users if admin"
-    field :get_all_private_users, type: :private_user_payload do
+    field :get_all_private_users, type: :all_private_users_payload do
       resolve(&UsersWeb.Resolvers.User.get_all_private_users/2)
 
       middleware &build_payload/2
