@@ -18,9 +18,19 @@ defmodule UsersWeb.Schema do
     field :token, :string, description: "Authentication token"
   end
 
+  object :password_reset, description: "Response for password reset flow initiation" do
+    field :sent, non_null(:boolean), description: "Indicates if password reset link was sent to email"
+  end
+
+  object :change_password, description: "Response for password change" do
+    field :success, non_null(:boolean), description: "Indicates if password change was successful"
+  end
+
   payload_object(:private_user_payload, :private_user)
   payload_object(:all_private_users_payload, list_of(:private_user))
   payload_object(:authenticated_user_payload, :authenticated_user)
+  payload_object(:password_reset_payload, :password_reset)
+  payload_object(:change_password_payload, :change_password)
 
   query do
     @desc "Root query"
@@ -94,6 +104,26 @@ defmodule UsersWeb.Schema do
       arg :confirmation_token, :string, description: "Sign up confirmation token"
 
       resolve(&UsersWeb.Resolvers.User.confirm_user/2)
+
+      middleware &build_payload/2
+    end
+
+    @desc "Send password reset link to email"
+    field :forgot_password, type: :password_reset_payload do
+      arg :email, non_null(:string), description: "Email address of User that forgot their password"
+
+      resolve(&UsersWeb.Resolvers.User.forgot_password/2)
+
+      middleware &build_payload/2
+    end
+
+    @desc "Change User password"
+    field :change_password, type: :change_password_payload do
+      arg :password, non_null(:string), description: "Updated password"
+      arg :password_reset_token, :string, description: "Optionally update password with reset token that was sent to email"
+      arg :old_password, :string, description: "Optionally update current Users password"
+
+      resolve(&UsersWeb.Resolvers.User.change_password/2)
 
       middleware &build_payload/2
     end

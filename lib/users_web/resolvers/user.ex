@@ -146,6 +146,47 @@ defmodule UsersWeb.Resolvers.User do
   # Handle unauthorized access of private Users
   def get_all_private_users(_, _), do: not_authorized()
 
+  # Send password reset link to email
+  def forgot_password(%{email: email}, _) do
+    sent = {:ok, %{sent: true}}
+
+    case Users.Account.get_user_by_email(email) do
+      nil  -> sent
+      user ->
+        password_reset_token = Util.random_string(64)
+        # Send password reset token to email here
+        IO.puts "======================> password_reset_token: #{password_reset_token}"
+        Account.update_user(user, %{password_reset_token: password_reset_token})
+        sent
+    end
+  end
+
+  # Change User password using password_reset_token that was sent to email
+  def change_password(%{password_reset_token: password_reset_token, password: password}, _) do
+    successful = {:ok, %{success: true}}
+
+    case Account.get_user_by_password_reset_token(password_reset_token) do
+      nil  -> successful
+      user ->
+        # Check if password_reset_token is older than 5 minutes here
+        Account.update_password(user, password)
+        successful
+    end
+  end
+  # Change password of currently logged in User
+  def change_password(%{old_password: old_password, password: password}, %{context: %{current_user: %{email: email} = current_user}}) do
+    case sign_in(%{email: email, password: old_password}, nil) do
+      {:ok, _} ->
+        case Account.update_password(current_user, password) do
+          {:ok, _} -> {:ok, %{success: true}}
+          result   -> result
+        end
+      _        -> {:error, "Incorrect password"}
+    end
+  end
+  # Handle unauthorized change of password
+  def change_password(_, _), do: not_authorized()
+
   def not_authorized, do: {:error, "Not Authorized"}
   def not_found, do: {:error, "Not found"}
   defp incorrect_email_or_password, do: {:error, "Incorrect email address or password"}

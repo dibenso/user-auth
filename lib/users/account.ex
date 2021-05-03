@@ -32,7 +32,7 @@ defmodule Users.Account do
 
   """
   def list_non_admin_users do
-    query = from u in Users, where: u.role == "user"
+    query = from u in User, where: u.role == "user"
     Repo.all(query)
   end
 
@@ -99,6 +99,22 @@ defmodule Users.Account do
 
   """
   def get_user_by_confirmation_token(confirmation_token), do: Repo.get_by(User, confirmation_token: confirmation_token)
+
+  @doc """
+  Gets a single user by password_reset_token.
+
+  Returns a User if found by password_reset_token or nil if not found
+
+  ## Examples
+
+      iex> get_user_by_password_reset_token("2e4ff1c2a ...")
+      User{}
+
+      iex> get_user_by_password_reset_token("9a2f4a4aa ...")
+      nil
+
+  """
+  def get_user_by_password_reset_token(password_reset_token), do: Repo.get_by(User, password_reset_token: password_reset_token)
 
   @doc """
   Creates a user.
@@ -170,6 +186,24 @@ defmodule Users.Account do
   def confirm_user(%User{} = user) do
     user
     |> User.update_changeset(%{confirmed: true, confirmation_token: ""})
+    |> Repo.update()
+  end
+
+  @doc """
+  Change user password.
+
+  ## Examples
+
+      iex> update_password(user, "$SuperStrong%P4ssW0rd?")
+      {:ok, %User{}}
+
+      iex> update_password(user, "badpass")
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_password(%User{} = user, password) do
+    user
+    |> User.update_password_changeset(%{password: password})
     |> Repo.update()
   end
 
